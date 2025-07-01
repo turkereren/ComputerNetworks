@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+      <title>STP Core &amp; BPDU Guard Edge</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>STP Core &amp; BPDU Guard Edge</h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    <div class="card">
+        <h2>STP Core &amp; BPDU-Guard Edge – Loop-Free Campus Design</h2>
+
+        <p><strong>Layer:</strong> Data-Link (L2)</p>
+        <p>
+            <strong>Scenario:</strong> The right-hand side runs Rapid-PVST for uplink
+            redundancy. The left side protects user ports with BPDU Guard, shutting
+            down any rogue switch instantly.
+        </p>
+
+
+        <h3>What is STP ?</h3>
+        <ul>
+            <li>
+                <strong>Root Bridge:</strong> Switch with the lowest <em>bridge ID</em>;
+                all links calculate cost toward it.
+            </li>
+            <li>
+                <strong>Port Roles:</strong> <em>Root</em> (best path to root bridge),
+                <em>Designated</em> (best path onto a segment), <em>Alternate</em>
+                (backup) &amp; <em>Disabled</em>.
+            </li>
+            <li>
+                <strong>Port States (RSTP):</strong> <em>
+                    Discarding &rArr; Learning
+                    &rArr; Forwarding
+                </em>, converging in &lt;1 s.
+            </li>
+            <li>
+                <strong>PortFast:</strong> Access-edge ports skip Discard/Learn, enter
+                Forwarding immediately &mdash; but must not receive BPDUs.
+            </li>
+            <li>
+                <strong>BPDU Guard:</strong> If a PortFast port suddenly sees a BPDU,
+                the switch assumes a rogue device and err-disables the port.
+            </li>
+        </ul>
+
+
+        <h3>Objective</h3>
+        <ul>
+            <li>Guarantee a single spanning-tree root (CSW) on the core.</li>
+            <li>Keep Rapid-PVST convergence &lt;2 s upon link failure.</li>
+            <li>
+                Shut down any access port that receives unexpected BPDUs
+                (rogue switch or mis-patch).
+            </li>
+        </ul>
+
+
+        <h3>1 – Configuration – Core &amp; Distribution (Right-Side)</h3>
+<pre><code>! === Core Switch (CSW) ===
+spanning-tree mode rapid-pvst
+spanning-tree vlan 5,6 priority 0          ! root bridge
+
+interface range Gi0/1-2   ! uplinks to SW2/SW3
+ switchport mode trunk
+ spanning-tree portfast trunk
+!
+! === SW2 / SW3 ===
+spanning-tree mode rapid-pvst
+spanning-tree vlan 5,6 priority 4096       ! secondary root
+
+interface Gi0/1          ! uplink to CSW
+ switchport mode trunk
+interface Gi0/2          ! crosslink
+ switchport mode trunk
+ spanning-tree portfast trunk
+</code></pre>
+
+        <h3>2 – Configuration – BPDU Guard Edge (Left-Side)</h3>
+<pre><code>! === SW4 / SW5 / SW8 ===
+spanning-tree portfast default             ! PortFast on all access ports
+spanning-tree bpduguard default            ! BPDU Guard on PortFast ports
+
+interface range Fa0/1-24
+ switchport mode access
+ switchport access vlan 5     ! or 6
+ spanning-tree portfast
+</code></pre>
+
+        <h3>3 – Verification Workflow</h3>
+        <ol>
+            <li>
+                <strong>Normal state:</strong>
+                `show spanning-tree root` on CSW → cost 0, role = root.
+            </li>
+            <li>
+                <strong>Link failure:</strong>
+                Unplug CSW↔SW2 link; alternate on SW3 becomes forwarding in &lt;1 s.
+            </li>
+            <li>
+                <strong>Rogue switch:</strong>
+                Patch SW5 Fa0/5 into a new 2960. Log shows
+                <code>%SPANTREE-2-BLOCK_BPDUGUARD</code>;
+                `show int status err-disabled` lists Fa0/5.
+            </li>
+        </ol>
+
+        <h3>4 – Roll-Back</h3>
+<pre><code>! Re-enable a tripped port
+interface Fa0/5
+ shutdown
+ no shutdown
+
+! Disable BPDU Guard globally (not recommended)
+no spanning-tree bpduguard default
+</code></pre>
+
+
+        <summary>📊 Topology Diagram</summary>
+        <img src="images/issue10_diagram.png" alt="STP & BPDU guard topology">
+
+
+        <p class="download-wrapper">
+            <a href="simulations/issue10_topology.pkt" class="download-link" download>
+                <span class="icon">⬇️</span> Download PT topology (.pkt)
+            </a>
+        </p>
+
+
+
+
+    </div>
+
+
+
+</main>
+</body></html>

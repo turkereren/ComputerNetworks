@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+      <title>Port Security</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>Port Security</h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    <div class="card">
+        <h2>Port Security – Unauthorized Device Shutdown</h2>
+
+        <p><strong>Layer:</strong> Data-Link (L2)</p>
+        <p><strong>Symptom:</strong> Rogue laptop plugged into access switch causes CAM table flood; legitimate PCs intermittently lose connectivity</p>
+        <p><strong>Root Cause:</strong> Switch ports were open – any MAC address could send traffic; attacker ran a MAC-flood tool</p>
+
+        <h3>Objective</h3>
+        <ul>
+            <li>Lock down each access port to a single, known MAC</li>
+            <li>Automatically err-disable the port on violation</li>
+            <li>Persist learned MACs across reboots (sticky)</li>
+        </ul>
+
+        <h3>Design Overview</h3>
+        <p>
+            • Access Switch: Cisco Catalyst 2960-24TT (SW1)<br>
+            • PCs PC0-PC14 connected Fa0/1 – Fa0/14<br>
+            • Port security enforced on all user ports; uplinks excluded
+        </p>
+
+        <h3>Configuration (Template)</h3>
+<pre><code>! --- apply to a range of access ports ---
+interface range Fa0/1 – Fa0/14
+ switchport mode access
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation shutdown
+ switchport port-security mac-address sticky
+!
+! (Optional) description for inventory tracking
+interface Fa0/5
+ description HR-Laptop (allowed)
+</code></pre>
+
+        <h3>Verification</h3>
+        <ol>
+            <li><code>show port-security interface Fa0/5</code> – should list <em>SecureUp</em>, <em>Max 1</em>, <em>Sticky</em>, <em>Last Source MAC</em>.</li>
+            <li>Plug a rogue laptop into Fa0/5 → port goes <em>err-disabled</em> within 1 s.</li>
+            <li><code>show interface status err-disabled</code> – port appears with <em>sec-violation</em> reason.</li>
+            <li>Legitimate PCs on other ports remain unaffected.</li>
+        </ol>
+
+        <h3>Recovery (per-port)</h3>
+<pre><code>! clear violation counter and re-enable port
+interface Fa0/5
+ shutdown
+ no shutdown
+</code></pre>
+
+        <h3>Bulk Deployment via Macro (optional)</h3>
+<pre><code>define interface-range USERS Fa0/1 – Fa0/14
+interface range USERS
+ source template SECURE-ACCESS
+!
+template SECURE-ACCESS
+ switchport mode access
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation shutdown
+ switchport port-security mac-address sticky
+end
+</code></pre>
+
+
+
+        <summary>📊 Topology Preview</summary>
+        <img src="images/issue07_diagram.png" alt="Port security topology diagram">
+        <p class="download-wrapper">
+            <a href="simulations/issue07_topology.pkt" class="download-link" download>
+                <span class="icon">⬇️</span>
+                Download Packet Tracer topology
+            </a>
+        </p>
+
+
+
+
+    </div>
+
+
+</main>
+</body></html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+<title>VLAN Segmentation & Router-on-a-Stick</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>VLAN Segmentation & Router-on-a-Stick</h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    
+
+    
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>VLAN Segmentation &amp; Router-on-a-Stick</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+
+    <body>
+        
+
+        <main class="issue-content">
+            
+            <div class="card">
+                <h2>VLAN Segmentation &amp; Router-on-a-Stick</h2>
+
+                <p><strong>Layer:</strong> Data-Link&nbsp;(L2) &amp; Network&nbsp;(L3)</p>
+                <p><strong>Symptom:</strong> Excessive broadcast traffic and weak security on a flat LAN</p>
+                <p><strong>Root Cause:</strong> All departments resided in the same broadcast domain</p>
+
+                <h3>Objective</h3>
+                <ul>
+                    <li>Reduce broadcast traffic by segmenting the LAN</li>
+                    <li>Isolate departments to improve security</li>
+                    <li>Centralise inter-VLAN routing on the router</li>
+                </ul>
+
+                <h3>VLAN Design</h3>
+                <table>
+                    <thead>
+                        <tr><th>Department</th><th>VLAN</th><th>Subnet / Gateway</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Servers</td><td>2</td><td>192.168.2.0 / 24 → 192.168.2.1</td></tr>
+                        <tr><td>IT</td><td>3</td><td>192.168.3.0 / 24 → 192.168.3.1</td></tr>
+                        <tr><td>Guests</td><td>4</td><td>192.168.4.0 / 24 → 192.168.4.1</td></tr>
+                    </tbody>
+                </table>
+                <p><em>Router-on-a-Stick:</em> interface <code>Gi0/0</code> is split into sub-interfaces (<code>.2 / .3 / .4</code>) over an 802.1Q trunk.</p>
+
+                <h3>Configuration</h3>
+<pre><code>! --- SWITCH (2960) ---
+vlan 2  name Sunucular
+vlan 3  name BilgiIslem
+vlan 4  name Misafir
+
+interface range Fa0/11 , Fa0/21
+ switchport mode access
+ switchport access vlan 2     ! Servers
+
+interface range Fa0/20 , Fa0/12
+ switchport mode access
+ switchport access vlan 3     ! IT
+
+interface range Fa0/14 , Fa0/22
+ switchport mode access
+ switchport access vlan 4     ! Guests
+
+
+
+</code></pre>
+
+<pre><code>! --- ROUTER ---
+interface Gi0/0
+ no shutdown
+
+interface Gi0/0.2
+ encapsulation dot1q 2
+ ip address 192.168.2.1 255.255.255.0
+
+interface Gi0/0.3
+ encapsulation dot1q 3
+ ip address 192.168.3.1 255.255.255.0
+
+interface Gi0/0.4
+ encapsulation dot1q 4
+ ip address 192.168.4.1 255.255.255.0
+</code></pre>
+
+                <h3>Verification</h3>
+                <ol>
+                    <li>Ping tests: same-VLAN hosts succeed; cross-VLAN hosts route via <code>192.168.x.1</code>.</li>
+                    <li>Run <code>show vlan brief</code> and <code>show interfaces trunk</code> on the switch.</li>
+                    <li>Capture traffic to confirm broadcasts stay inside their VLAN.</li>
+                </ol>
+
+               
+</code></pre>
+
+
+                <summary>📊 Topology Preview</summary>
+                <img src="images/issue01_diagram.png" alt="Packet Tracer topology diagram">
+                <p class="download-wrapper">
+                    <a href="simulations/issue01_topology.pkt"
+                       class="download-link"
+                       download>
+                        <span class="icon" aria-hidden="true">⬇️</span>
+                        Download Packet Tracer topology
+                    </a>
+                </p>
+
+
+                
+
+            </div>
+            
+        </main>
+    </body>
+</html>
+</main>
+</body></html>

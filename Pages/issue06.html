@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+      <title>SMB Signing Mismatch – Session Setup Failure</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>SMB Signing Mismatch – Session Setup Failure</h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    <div class="card">
+        <h2>SMB Signing Mismatch – Session Setup Failure</h2>
+
+        <p><strong>Layer:</strong> Session (L5)</p>
+        <p><strong>Symptom:</strong> Windows clients cannot map \\FILESRV\Share – error <em>STATUS_ACCESS_DENIED</em>; Wireshark shows “SMB2 SESSION_SETUP → STATUS_USER_SESSION_DELETED”</p>
+        <p><strong>Root Cause:</strong> Server enforces mandatory SMB signing, while clients negotiate unsigned SMB2 sessions; the session fails during setup handshake</p>
+
+        <h3>Objective</h3>
+        <ul>
+            <li>Identify the signing-mismatch with packet capture and event logs</li>
+            <li>Align server and client Signing policies (either enable on client or relax on server)</li>
+            <li>Restore successful SMB sessions and drive mappings</li>
+        </ul>
+
+        <h3>Baseline Topology</h3>
+        <p>
+            • <em>FileSrv</em>: Windows Server 2022 DC, SMB Signing = <strong>Required</strong><br>
+            • <em>Client-A</em>: Windows 10 22H2 laptop, on-prem AD<br>
+            • Network: 1 Gbps campus LAN, no middleboxes modifying SMB
+        </p>
+
+        <h3>Step 1 – Capture &amp; Diagnose</h3>
+<pre><code># On Client-A (PowerShell)
+PS&gt; Start-Process -Verb runAs 'powershell'   # open elevated shell
+PS&gt; netsh trace start capture=yes IPv4.Address=FQDN_or_IP_of_FileSrv
+PS&gt; net use X: \\FileSrv\Share
+PS&gt; netsh trace stop
+</code></pre>
+
+        <p>Open the generated ETL in Wireshark:</p>
+        <ul>
+            <li>Packet #7: <code>SMB2&nbsp;NEGOTIATE</code> – client lists dialect 3.1.1, signs = <em>disabled</em></li>
+            <li>Packet #8: <code>SMB2&nbsp;NEGOTIATE&nbsp;Response</code> – <em>signing&nbsp;required = yes</em></li>
+            <li>Packet #9: <code>SMB2&nbsp;SESSION_SETUP Request</code> – Signature field = all zeros</li>
+            <li>Packet #10: <code>SESSION_SETUP Response → STATUS_USER_SESSION_DELETED</code></li>
+        </ul>
+
+        <h3>Step 2 – Option A: Enable SMB Signing on Clients</h3>
+<pre><code># Local group policy (gpedit.msc) or via GPO:
+Computer Configuration
+ └ Policies
+   └ Windows Settings
+     └ Security Settings
+       └ Local Policies
+         └ Security Options
+             ▶ "Microsoft network client: Digitally sign communications (always)"
+                → Enable
+</code></pre>
+
+        <p>Or via PowerShell / registry:</p>
+<pre><code>Set-ItemProperty `
+  -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters" `
+  -Name "RequireSecuritySignature" -Value 1 -Type DWord
+gpupdate /force
+</code></pre>
+
+        <h3>Step 2 – Option B: Relax on the Server</h3>
+<pre><code># Server 2022 – Disable "require signing":
+Set-SmbServerConfiguration -RequireSecuritySignature $false
+Restart-Service lanmanserver
+</code></pre>
+
+        <h3>Verification</h3>
+        <ol>
+            <li><code>net use X: \\FileSrv\Share</code> – drive maps successfully.</li>
+            <li>Wireshark: SESSION_SETUP now carries a valid signature; server responds <em>STATUS_SUCCESS</em>.</li>
+            <li>Event ID 5829 (SMBClient) no longer appears in Windows logs.</li>
+        </ol>
+
+     
+
+      
+
+            <summary>📊 Topology Preview</summary>
+            <img src="images/issue06_diagram.png" alt="SMB signing mismatch diagram">
+        
+
+</main>
+</body></html>

@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Project Overview &amp; Summary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+    <header>
+        <h1>Computer Networks Admin Guide &ndash; Overview</h1>
+        <h2>Halil Türker Eren</h2>
+        <p style="margin-top:0.8rem;">
+            <a href="../index.html" class="back">&larr; Back to Home</a>
+        </p>
+    </header>
+    
+
+
+    <main style="max-width:900px;margin:auto;padding:2rem 1.5rem;">
+        <div class="card">
+            <h2>Purpose</h2>
+            <p>
+                The goal of this study is to demonstrate ten <em>real-world</em> network
+                problems across all OSI layers, then
+                simulate a working solution for each.
+                Every guide is written from an <strong>Admin&nbsp;Perspective</strong>,
+                providing CLI snippets, verification steps, roll-back plans and Packet Tracer
+                files when possible.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>What We Built</h2>
+            <ul>
+                <li>01. <strong>VLAN Segmentation &amp; Router-on-a-Stick</strong></li>
+                <li>02. <strong>EtherChannel (LACP) – Link Aggregation</strong></li>
+                <li>03. <strong>HSRP – Gateway Redundancy</strong></li>
+                <li>04. <strong>Wi-Fi 7 Channel Overlap (6 GHz)</strong></li>
+                <li>05. <strong>TCP Window-Scaling Mismatch</strong></li>
+                <li>06. <strong>SMB Signing Mismatch – Session Setup Fail</strong></li>
+                <li>07. <strong>Port Security – MAC Lockdown</strong></li>
+                <li>08. <strong>DHCP Snooping – Rogue Server Block</strong></li>
+                <li>09. <strong>HTTP/2 Downgrade – Missing ALPN</strong></li>
+                <li>10. <strong>STP Core &amp; BPDU Guard Edge</strong></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Key Takeaways</h2>
+            <ol>
+                <li>
+                    <strong>Layered thinking works.</strong> Solving issues at the
+                    appropriate OSI layer reduces complexity and avoids side-effects.
+                </li>
+                <li>
+                    <strong>Simulation ≠ Reality.</strong> Tools like CPT are excellent
+                    for L2/L3 concepts, but higher-layer protocols (TLS, SMB, HTTP/2) must
+                    be tested on real stacks.
+                </li>
+                <li>
+                    <strong>Document everything.</strong> A concise admin guide speeds up
+                    hand-over and future troubleshooting.
+                </li>
+            </ol>
+        </div>
+    </main>
+
+    <footer style="text-align:center;padding:1.2rem 0;color:var(--text-light);">
+        &copy; 2025 Halil Türker Eren – Computer Networks Project
+    </footer>
+</body>
+</html>

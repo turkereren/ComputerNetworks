@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+      <title>HTTP/2 Downgrade </title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>HTTP/2 Downgrade </h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    <div class="card">
+        <h2>HTTP/2 Downgrade – Missing ALPN in TLS Handshake</h2>
+
+        <p><strong>Layers:</strong> Presentation (L6) &amp; Application (L7)</p>
+        <p><strong>Symptom:</strong> Browsers fall back to HTTP/1.1; gRPC mobile app fails with <em>UNAVAILABLE: HTTP/2 error</em></p>
+        <p><strong>Root Cause:</strong> TLS handshake lacks ALPN <h2> identifier; server advertises only <code>http/1.1</code></p>
+
+        <h3>Objective</h3>
+        <ul>
+            <li>Confirm ALPN absence via <code>openssl s_client</code> &amp; Chrome DevTools</li>
+            <li>Enable ALPN “h2” on the web server (Nginx) and ensure HTTP/2 module is loaded</li>
+            <li>Validate that browsers &amp; gRPC clients negotiate HTTP/2 successfully</li>
+        </ul>
+
+        <h3>Baseline Topology</h3>
+        <p>
+            • <em>WebSrv</em>: Ubuntu 22.04, Nginx 1.20, site <code>api.example.com</code><br>
+            • <em>Client-A</em>: Chrome 118 (desktop)<br>
+            • <em>Client-B</em>: Android gRPC app<br>
+            • TLS 1.3 certificate issued by Let’s Encrypt
+        </p>
+
+        <h3>Step 1 – Capture &amp; Diagnose</h3>
+<pre><code>$ openssl s_client -connect api.example.com:443 -alpn "h2,http/1.1" -servername api.example.com
+...
+ALPN protocol: http/1.1         &lt;-- h2 MISSING
+</code></pre>
+
+        <ul>
+            <li>Chrome DevTools ▸ Network ▸ “Protocol” column shows <em>http/1.1</em>.</li>
+            <li>Android logcat: <code>java.net.ProtocolException: Expected HTTP/2</code></li>
+        </ul>
+
+        <h3>Step 2 – Enable HTTP/2 + ALPN on Nginx</h3>
+<pre><code># install http2 module (already built-in for 1.9+)
+sudo apt install nginx
+
+# /etc/nginx/sites-available/api.conf
+server {
+  listen 443 ssl http2;               # &lt;-- http2 keyword adds ALPN "h2"
+  server_name api.example.com;
+
+  ssl_certificate     /etc/letsencrypt/live/api.example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/api.example.com/privkey.pem;
+
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+
+  location / {
+    proxy_pass http://backend:8080;
+  }
+}
+sudo nginx -t && sudo systemctl reload nginx
+</code></pre>
+
+        <h3>Step 3 – Verify Success</h3>
+        <ol>
+            <li><code>openssl s_client -alpn "h2"</code> now returns <em>ALPN protocol: h2</em>.</li>
+            <li>Chrome DevTools shows <em>h2</em> in the Protocol column.</li>
+            <li>gRPC mobile app connects without error and latency drops (persistent stream).</li>
+        </ol>
+
+        <h3>Optional Hardening</h3>
+<pre><code># Disable HTTP/1.1 fallback if all clients are modern
+server {
+  listen 443 ssl http2;
+  add_header Alt-Svc 'h2=":443"; ma=86400';
+}
+</code></pre>
+
+       
+</code></pre>
+
+
+      
+            <summary>📊 Topology Preview</summary>
+            <img src="images/issue09_diagram.png" alt="TLS ALPN / HTTP2 topology diagram">
+      
+    </div>
+
+
+</main>
+</body></html>

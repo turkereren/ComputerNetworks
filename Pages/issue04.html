@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+      <title>Wi-Fi 7 Channel Overlap</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>Wi-Fi 7 Channel Overlap</h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    <div class="card">
+        <h2>Wi-Fi 7 Channel Overlap (AFC & 6 GHz Planning)</h2>
+
+        <p><strong>Layer:</strong> Physical (L1) &amp; MAC (L2)</p>
+        <p><strong>Symptom:</strong> Clients on the 6 GHz band report low throughput and high retries</p>
+        <p><strong>Root Cause:</strong> Over-wide 320 MHz channels overlap with neighboring cells; AFC coordination not applied</p>
+
+        <h3>Objective</h3>
+        <ul>
+            <li>Eliminate co-channel and adjacent-channel interference on 6 GHz radios</li>
+            <li>Leverage AFC (Automated Frequency Coordination) database for permitted EIRP</li>
+            <li>Optimize channel widths (320 → 160 MHz or 80 MHz where required)</li>
+        </ul>
+
+        <h3>Baseline Topology</h3>
+        <p>
+            • Two Wi-Fi 7 APs (Cisco Catalyst 9136I) tagged as <em>AP-East</em> and <em>AP-West</em><br>
+            • Wireless LAN Controller (WLC) version 17.13<br>
+            • 6 GHz DFS-std domain, AFC region = US<br>
+            • Client mix: Intel BE200 NIC laptops + Samsung Galaxy S24
+        </p>
+
+        <h3>Step 1 – Site Survey &amp; Channel Map</h3>
+        <ol>
+            <li>
+                Use <code>Ekahau AI Pro</code> or <code>AirMagnet Survey</code> in 6 GHz mode.<br>
+                Export heatmap &amp; channel utilization CSV.
+            </li>
+            <li>Identify overlapping channels (e.g.&nbsp;AP-East = ch 7 @ 320 MHz, AP-West = ch 11 @ 320 MHz → 60 % spectral overlap).</li>
+            <li>Record measured RSSI and retry % for clients.</li>
+        </ol>
+
+        <h3>Step 2 – Retrieve AFC Permit List</h3>
+<pre><code># On the WLC CLI
+ap afc-request ap-name AP-East channel 7 width 320
+ap afc-request ap-name AP-West channel 11 width 320
+#
+# Export JSON to TFTP
+copy ap-afc-data tftp://192.168.50.10/afc-permit.json
+</code></pre>
+
+        <h3>Step 3 – Re-plan Channel Width &amp; Power</h3>
+        <table>
+            <thead><tr><th>AP</th><th>Old</th><th>New</th><th>EIRP (dBm)</th></tr></thead>
+            <tbody>
+                <tr><td>AP-East</td><td>ch 7 @ 320 MHz</td><td>ch 7 @ 160 MHz</td><td>30 → 24 (per AFC)</td></tr>
+                <tr><td>AP-West</td><td>ch 11 @ 320 MHz</td><td>ch 15 @ 160 MHz</td><td>30 → 24</td></tr>
+            </tbody>
+        </table>
+
+<pre><code>! WLC CLI snippet
+wlan 6GHz-Enterprise
+ channel-width 160
+ channel 7 ap AP-East
+ channel 15 ap AP-West
+ client-dyn-tpc enable
+ max-tx-power 24
+</code></pre>
+
+        <h3>Step 4 – Verification</h3>
+        <ol>
+            <li><code>show ap dot11 6ghz load</code> – channel utilisation &lt; 35 % per AP.</li>
+            <li>Laptop speedtest ≥ 3 Gbps downlink, retries &lt; 2 %.</li>
+            <li>Wi-Fi Analyzer (Android) confirms no spectral overlap in 5 dB range.</li>
+        </ol>
+
+   
+</code></pre>
+
+     
+
+        
+            <summary>📊 AI Generated Topology Preview</summary>
+            <img src="images/issue04_diagram.png" alt="Wi-Fi 7 HSRP topology diagram">
+        
+    </div>
+
+
+</main>
+</body></html>

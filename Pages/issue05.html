@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+      <title>TCP Window-Scaling Mismatch – Throughput Collapse</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>TCP Window-Scaling Mismatch – Throughput Collapse</h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    <div class="card">
+        <h2>TCP Window-Scaling Mismatch – Throughput Collapse</h2>
+
+        <p><strong>Layer:</strong> Transport (L4)</p>
+        <p><strong>Symptom:</strong> Long-haul file transfers stall at &lt;300 kB/s; Wireshark shows Window Size = 0 + repeated ACKs</p>
+        <p><strong>Root Cause:</strong> One endpoint advertises RFC 7323 window-scale = 10, the middlebox strips the option; the peer believes scale = 0 and shrinks the receive window ⟶ 0-window condition</p>
+
+        <h3>Objective</h3>
+        <ul>
+            <li>Detect the scaling-option mismatch with packet capture</li>
+            <li>Apply a firewall policy that preserves TCP options (or selectively disables scaling)</li>
+            <li>Restore full 1 Gbit throughput on WAN transfers</li>
+        </ul>
+
+        <h3>Baseline Topology</h3>
+        <p>
+            • <em>Server-A</em> (Ubuntu 22.04, 10.0.10.10) in DC-1<br>
+            • <em>Client-B</em> (Windows 11, 192.0.2.50) in HQ<br>
+            • MPLS WAN → stateful firewall (FortiGate 200F, SW 7.2) → Core switch<br>
+            • RTT ≈ 60 ms, 1 Gbps link capacity
+        </p>
+
+        <h3>Step 1 – Capture &amp; Analyse</h3>
+<pre><code># On Client-B (PowerShell, admin)
+PS&gt; netsh trace start capture=yes ipv4.address=10.0.10.10
+# start 2 GB upload via scp … stalls at 4 MB
+PS&gt; netsh trace stop
+# Open ETL in Wireshark
+#   ➜ SYN from B:  window 64240, wscale 10
+#   ➜ SYN-ACK:     wscale 7
+#   ➜ ACK:         no wscale option (!)
+# Frames 200-300:  Window = 0, Zero-Window Probe loop
+</code></pre>
+
+        <h3>Step 2 – Firewall Fix (preserve TCP options)</h3>
+<pre><code>config firewall profile-protocol-options
+ edit "WAN-TCP"
+  config tcp
+   set status enable
+   set options no-strip      &lt;-- keep WS/SACK/MSS
+  end
+ next
+end
+#
+config firewall policy
+ edit 10
+  set name "DC1-HQ"
+  set profile-protocol-options "WAN-TCP"
+ next
+end
+</code></pre>
+
+        <h3>Alternative – Disable Scaling on the Server</h3>
+        <p>(Temporary mitigation if firewall cannot be changed)</p>
+<pre><code># Ubuntu Server-A
+echo "net.ipv4.tcp_window_scaling = 0" | sudo tee -a /etc/sysctl.d/disable-wscale.conf
+sudo sysctl -p /etc/sysctl.d/disable-wscale.conf
+</code></pre>
+
+        <h3>Verification</h3>
+        <ol>
+            <li>Repeat the 2 GB SCP upload → sustained &gt;900 Mbps, no 0-window stalls.</li>
+            <li>Wireshark: ACK now contains <code>WScale=10</code> in every handshake leg.</li>
+            <li>Firewall logs show zero “TCP option stripped” events.</li>
+        </ol>
+
+    
+</code></pre>
+
+       
+
+        
+            <summary>📊 Topology Preview</summary>
+            <img src="images/issue05_diagram.png" alt="TCP window-scaling mismatch diagram">
+        
+    </div>
+
+
+</main>
+</body></html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+      <title>Link Aggregation (EtherChannel)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>Link Aggregation (EtherChannel)</h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    <div class="card">
+        <h2>EtherChannel Link Aggregation between Switches</h2>
+
+        <p><strong>Layer:</strong> Data-Link (L2)</p>
+        <p><strong>Symptom:</strong> Single uplink becomes a bottleneck and is a single point of failure</p>
+        <p><strong>Root Cause:</strong> Inter-switch traffic relies on one physical link with no redundancy</p>
+
+        <h3>Objective</h3>
+        <ul>
+            <li>Combine eight physical links into one logical bundle (Port-Channel)</li>
+            <li>Increase aggregated bandwidth and ensure link-level redundancy</li>
+            <li>Simplify Layer-2 configuration (VLANs, STP, QoS apply once)</li>
+        </ul>
+
+        <h3>Design</h3>
+        <ul>
+            <li><strong>Switch 1</strong> – interfaces <code>Fa0/23 - Fa0/24 + Gi0/1 - Gi0/4</code></li>
+            <li><strong>Switch 2</strong> – matching interfaces <code>Fa0/23 - Fa0/24 + Gi0/1 - Gi0/4</code></li>
+            <li>Aggregation protocol: <strong>LACP active-active</strong></li>
+            <li>Logical interface: <code>Port-channel 1</code></li>
+        </ul>
+
+        <h3>Configuration</h3>
+<pre><code>! --- SWITCH 1 ---
+interface range fa0/23 - fa0/24 , gi0/1 - gi0/4
+ channel-group 1 mode active      ! LACP
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface port-channel 1
+ switchport trunk native vlan 99
+ switchport trunk allowed vlan 2-10
+ description *** EtherChannel to SW2 ***
+</code></pre>
+
+<pre><code>! --- SWITCH 2 ---
+interface range fa0/23 - fa0/24 , gi0/1 - gi0/4
+ channel-group 1 mode active
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface port-channel 1
+ switchport trunk native vlan 99
+ switchport trunk allowed vlan 2-10
+ description *** EtherChannel to SW1 ***
+</code></pre>
+
+        <h3>Verification</h3>
+        <ol>
+            <li><code>show etherchannel summary</code> – Port-channel 1 SU, eight P ports</li>
+            <li>Disconnect one member link → traffic continues, <code>show interfaces counter</code> proves load-balancing</li>
+            <li><code>show spanning-tree</code> – Port-channel 1 appears as a single trunk port</li>
+        </ol>
+
+       
+</code></pre>
+
+
+
+        <summary>📊 Topology Preview</summary>
+        <img src="images/issue02_diagram.png" alt="EtherChannel topology diagram">
+        <p class="download-wrapper">
+            <a href="simulations/issue02_topology.pkt" class="download-link" download>
+                <span class="icon" aria-hidden="true">⬇️</span>
+                Download Packet Tracer topology
+            </a>
+        </p>
+
+
+        
+
+    </div>
+
+
+
+
+</main>
+</body></html>

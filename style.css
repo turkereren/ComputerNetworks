@@ -1,0 +1,246 @@
+﻿
+
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0
+}
+
+html {
+    scroll-behavior: smooth
+}
+
+body {
+    font-family: 'Roboto',sans-serif;
+    background: #002b5c linear-gradient(145deg,#002b5c 0%,#005b91 100%);
+    color: #f7f9fc;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+
+:root {
+    --primary: #00a0df;
+    --primary-dark: #0082b5;
+    --text-light: #f7f9fc;
+    --card-bg: #f2f6fa; 
+    --card-shadow: 0 4px 18px rgba(0,0,0,.12);
+    --radius: 12px;
+}
+
+header {
+    background: transparent;
+    padding: 2.2rem 2rem 1.2rem;
+    text-align: center;
+}
+
+    header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-light);
+    }
+
+nav {
+    margin-top: 1.2rem;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: .6rem;
+}
+
+    nav a {
+        color: var(--text-light);
+        text-decoration: none;
+        background: rgba(0,0,0,.15);
+        padding: .45rem .9rem;
+        border-radius: 50px;
+        font-size: .9rem;
+    }
+
+        nav a:hover {
+            background: rgba(0,0,0,.30)
+        }
+
+/*BACK LINK (issue pages)*/
+.back {
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+    .back:hover {
+        text-decoration: underline
+    }
+
+/*LAYOUT*/
+main {
+    padding: 2.5rem 1.5rem;
+    max-width: 1200px;
+    margin: auto
+}
+
+/*GRID (index)*/
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+    gap: 2rem;
+}
+
+.card {
+    background: var(--card-bg);
+    color: #0d1117;
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    padding: 1.8rem 1.6rem;
+    text-decoration: none;
+}
+    /* remove lift/zoom on hover */
+    .card:hover {
+        box-shadow: var(--card-shadow);
+        transform: none
+    }
+
+    /* card headings & text */
+    .card h2 {
+        font-size: 1.15rem;
+        margin-bottom: .6rem;
+        color: #0d1117;
+    }
+
+    .card p {
+        font-size: .9rem;
+        color: #424751
+    }
+
+/*ISSUE PAGES*/
+.issue-content {
+    max-width: 1100px; /* wider admin guide */
+    margin: auto;
+}
+
+    .issue-content .card {
+        background: var(--card-bg);
+        padding: 2rem 2rem 2.5rem;
+    }
+
+    /*Tables */
+    .issue-content table {
+        width: 100%;
+        margin: 1rem 0 1.5rem;
+        border-collapse: collapse;
+    }
+
+    .issue-content th,
+    .issue-content td {
+        border: 1px solid #e1e4e8;
+        padding: .55rem .75rem;
+        text-align: left;
+        font-size: .9rem;
+    }
+
+    .issue-content thead {
+        background: #f6f8fa;
+        font-weight: 500;
+    }
+
+    /*Inline code (outside <pre>)*/
+    .issue-content code {
+        background: #f6f8fa;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: .85rem;
+    }
+
+/*Code blocks*/
+pre {
+    background: #0a1d35; /* deep navy */
+    color: #e6edf3;
+    overflow-x: auto;
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius);
+    margin: 1rem 0 1.5rem;
+    font-size: .85rem;
+}
+
+    pre code {
+        background: transparent !important; /* remove white boxes          */
+        padding: 0 !important;
+        color: inherit;
+    }
+
+/*Details / Summary*/
+details summary {
+    cursor: pointer;
+    font-weight: 500;
+    margin-top: 1rem;
+    color: var(--primary-dark);
+}
+
+/*Images*/
+img {
+    max-width: 100%;
+    border-radius: var(--radius);
+    margin-top: 1rem;
+}
+
+/*MEDIA QUERIES*/
+@media(max-width:600px) {
+    header h1 {
+        font-size: 1.6rem
+    }
+
+    nav a {
+        font-size: .8rem;
+        padding: .35rem .8rem
+    }
+}
+
+/*Download link styling (icon + color) */
+.download-wrapper {
+    margin-top: 1rem;
+}
+
+.download-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-weight: 500;
+    color: var(--primary-dark);
+    text-decoration: none;
+}
+
+    .download-link:hover {
+        text-decoration: underline;
+    }
+
+    /* Icon inherits color / same size */
+    .download-link .icon {
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+/* --- Personal footer card ----------------------------------------- */
+footer.profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .6rem;
+    padding: 2rem 0 2.5rem;
+    color: var(--text-light);
+}
+
+    footer.profile img.avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(255,255,255,.35);
+    }
+
+    footer.profile p {
+        margin: 0;
+        font-weight: 600;
+    }

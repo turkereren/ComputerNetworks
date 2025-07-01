@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+      <title>DHCP Snooping</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css"></head>
+<body>
+<header><h1>DHCP Snooping</h1></header>
+<main class="issue-content">
+    <a class="back" href="../index.html">← Back to list</a>
+    <div class="card">
+        <h2>DHCP Snooping – Rogue DHCP Server Blocking</h2>
+
+        <p><strong>Layer:</strong> Data-Link (L2)</p>
+        <p><strong>Symptom:</strong> Clients occasionally receive wrong IP (192.168.3.x) and lose network access</p>
+        <p><strong>Root Cause:</strong> An unauthorized DHCP server on SW2 offers bogus leases; SW1 ports were unprotected</p>
+
+        <h3>Objective</h3>
+        <ul>
+            <li>Allow DHCP offers only from the trusted server (192.168.3.1)</li>
+            <li>Drop/Log all rogue DHCP messages from untrusted ports</li>
+            <li>Build lease binding table for future security features (DAI, IPSG)</li>
+        </ul>
+
+        <h3>Baseline Topology</h3>
+        <p>
+            • <em>Authorized&nbsp;DHCP</em>: Server-PT @ SW2 Fa0/1 → 192.168.3.101-200<br>
+            • <em>Unauthorized</em>: Server-PT (rogue) @ SW2 Fa0/2 → 192.168.3.202<br>
+            • Clients PC0-PC3 on SW1 Fa0/1-3<br>
+            • SW1 ↔ SW2 uplink = Fa0/24 (dotted in the diagram)
+        </p>
+
+        <h3>Configuration – SW1 (Access Switch)</h3>
+<pre><code>! enable feature
+ip dhcp snooping
+ip dhcp snooping vlan 3
+
+! mark uplink to SW2 as trusted
+interface Fa0/24
+ description LINK-TO-SW2
+ ip dhcp snooping trust
+
+! all PC access ports remain untrusted (default)
+interface range Fa0/1 - 3
+ switchport mode access
+ switchport access vlan 3
+
+! optional: limit DHCP rate to stop starvation attacks
+ip dhcp snooping limit rate 30
+</code></pre>
+
+        <h3>Configuration – SW2 (Distribution / DHCP segment)</h3>
+<pre><code>ip dhcp snooping
+ip dhcp snooping vlan 3
+
+! Authorized server port is trusted
+interface Fa0/1
+ description AUTH-DHCP
+ ip dhcp snooping trust
+
+! Rogue server port stays untrusted
+interface Fa0/2
+ description ROGUE-DHCP
+ ! (no trust)
+
+! Uplink back to SW1 also trusted
+interface Fa0/24
+ ip dhcp snooping trust
+</code></pre>
+
+        <h3>Verification</h3>
+        <ol>
+            <li><code>show ip dhcp snooping</code> – both switches list VLAN 3, trusted ports as expected.</li>
+            <li><code>show ip dhcp snooping binding</code> – PC0-PC3 receive 192.168.3.101-103 from the authorized server.</li>
+            <li>Rogue server sends Offer → Switch drops; <code>show ip dhcp snooping statistics</code> increments <em>“drops: untrusted”</em>.</li>
+            <li>Pings from PC0 to 192.168.3.1 succeed; PCs never get 192.168.3.202 gateway.</li>
+        </ol>
+
+      
+</code></pre>
+
+
+
+
+        <summary>📊 Topology Preview</summary>
+        <img src="images/issue08_diagram.png" alt="DHCP snooping topology diagram">
+        <p class="download-wrapper">
+            <a href="simulations/issue08_topology.pkt" class="download-link" download>
+                <span class="icon">⬇️</span>
+                Download Packet Tracer topology
+            </a>
+        </p>
+
+
+
+    </div>
+
+</main>
+</body></html>
